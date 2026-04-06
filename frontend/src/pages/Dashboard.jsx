@@ -11,11 +11,13 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [applicationData, setApplicationData] = useState(null);
 
   const handleSubmit = async (formData) => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setApplicationData(formData); // Store application data
     try {
       const response = await api.post('/analyze-loan', formData);
       setResult(response.data);
@@ -68,7 +70,7 @@ export default function Dashboard() {
         {/* Result */}
         <div className="xl:col-span-7">
           {result ? (
-            <ResultCard result={result} />
+            <ResultCard result={result} applicationData={applicationData} />
           ) : (
             <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center p-16 text-center text-slate-500 min-h-[560px] shadow-2xl">
               <div className="relative mb-6">

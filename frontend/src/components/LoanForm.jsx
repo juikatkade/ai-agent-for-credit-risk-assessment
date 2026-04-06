@@ -7,7 +7,9 @@ export default function LoanForm({ onSubmit, isLoading }) {
     income: '',
     credit_score: '',
     dti: '',
-    employment_length: ''
+    employment_length: '',
+    loan_tenure: '',
+    currency: 'USD'
   });
 
   const handleChange = (e) => {
@@ -25,7 +27,9 @@ export default function LoanForm({ onSubmit, isLoading }) {
       income: Number(formData.income),
       credit_score: parseInt(formData.credit_score, 10),
       dti: Number(formData.dti),
-      employment_length: parseInt(formData.employment_length, 10)
+      employment_length: parseInt(formData.employment_length, 10),
+      loan_tenure: formData.loan_tenure ? parseInt(formData.loan_tenure, 10) : null,
+      currency: formData.currency
     });
   };
 
@@ -35,7 +39,9 @@ export default function LoanForm({ onSubmit, isLoading }) {
       income: '',
       credit_score: '',
       dti: '',
-      employment_length: ''
+      employment_length: '',
+      loan_tenure: '',
+      currency: 'USD'
     });
   };
 
@@ -70,7 +76,23 @@ export default function LoanForm({ onSubmit, isLoading }) {
 
         <div className="grid grid-cols-2 gap-5">
           <div>
-            <label className="block text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">Annual Yield ($)</label>
+            <label className="block text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">Currency</label>
+            <select 
+              required 
+              name="currency"
+              value={formData.currency}
+              onChange={handleChange}
+              className="w-full bg-slate-900/60 border border-white/10 rounded-xl p-4 text-white focus:bg-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all duration-300 shadow-inner"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="INR">INR (₹)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">
+              Annual Income ({formData.currency === 'USD' ? '$' : '₹'})
+            </label>
             <input 
               required 
               name="income"
@@ -79,7 +101,7 @@ export default function LoanForm({ onSubmit, isLoading }) {
               value={formData.income}
               onChange={handleChange}
               className="w-full bg-slate-900/60 border border-white/10 rounded-xl p-4 text-white placeholder-slate-600 focus:bg-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all duration-300 shadow-inner"
-              placeholder="120000" 
+              placeholder={formData.currency === 'USD' ? '120000' : '10000000'} 
             />
           </div>
           
@@ -112,17 +134,34 @@ export default function LoanForm({ onSubmit, isLoading }) {
           </div>
           
           <div>
-            <label className="block text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">Tenure (Yrs)</label>
+            <label className="block text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">Employment Length (Yrs)</label>
             <input 
               required 
               name="employment_length"
               type="number" 
               min="0"
+              max="50"
               value={formData.employment_length}
               onChange={handleChange}
               className="w-full bg-slate-900/60 border border-white/10 rounded-xl p-4 text-white placeholder-slate-600 focus:bg-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all duration-300 shadow-inner"
-              placeholder="4" 
+              placeholder="5" 
             />
+            <p className="text-xs text-slate-500 mt-1">Time at current job</p>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-semibold tracking-wider text-slate-400 mb-2 uppercase">Loan Tenure (Yrs)</label>
+            <input 
+              name="loan_tenure"
+              type="number" 
+              min="1"
+              max="30"
+              value={formData.loan_tenure}
+              onChange={handleChange}
+              className="w-full bg-slate-900/60 border border-white/10 rounded-xl p-4 text-white placeholder-slate-600 focus:bg-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all duration-300 shadow-inner"
+              placeholder="15" 
+            />
+            <p className="text-xs text-slate-500 mt-1">Requested loan term (optional)</p>
           </div>
         </div>
       </div>

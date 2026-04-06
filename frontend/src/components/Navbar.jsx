@@ -26,7 +26,7 @@ export default function Navbar() {
             <ShieldCheck className="w-5 h-5 text-slate-950" />
           </div>
           <span className="text-lg font-bold text-white tracking-tight">
-            LoanAgent<span className="text-amber-400">AI</span>
+            LoanRisk<span className="text-amber-400">AI</span>
           </span>
         </Link>
 

@@ -1,4 +1,4 @@
-import xgboost as xgb
+from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import numpy as np
 import pickle
@@ -27,8 +27,8 @@ df = pd.DataFrame({
     'employment_length': employment_length
 })
 
-# Train model
-model = xgb.XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.1, random_state=42)
+# Train model using RandomForest instead of XGBoost
+model = RandomForestClassifier(n_estimators=100, max_depth=3, random_state=42)
 model.fit(df, target)
 
 # Save model
@@ -36,4 +36,4 @@ os.makedirs('models', exist_ok=True)
 with open('models/dummy_model.pkl', 'wb') as f:
     pickle.dump(model, f)
 
-print("Dummy XGBoost model trained and saved to models/dummy_model.pkl")
+print("Dummy RandomForest model trained and saved to models/dummy_model.pkl")

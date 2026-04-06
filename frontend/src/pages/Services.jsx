@@ -17,19 +17,19 @@ const services = [
   {
     icon: Zap,
     title: 'Instant Underwriting',
-    desc: 'The agent follow a Think → Act → Observe → Decide loop, orchestrating multiple ML tools in parallel to deliver authoritative loan decisions in under 500 milliseconds.',
-    tags: ['Agent Loop', 'FastAPI', 'Sub-500ms'],
+    desc: 'The system follows a comprehensive analysis pipeline, orchestrating multiple ML tools in parallel to deliver authoritative loan decisions in under 500 milliseconds.',
+    tags: ['ML Pipeline', 'FastAPI', 'Sub-500ms'],
   },
   {
     icon: Database,
     title: 'Decision Memory',
-    desc: 'MongoDB-backed decision logs with asynchronous writes allow the agent to retrieve similar historical applications as contextual signals, continuously improving accuracy over time.',
+    desc: 'MongoDB-backed decision logs with asynchronous writes allow the system to retrieve similar historical applications as contextual signals, continuously improving accuracy over time.',
     tags: ['MongoDB', 'Motor Async', 'Historical Context'],
   },
   {
     icon: BarChart3,
     title: 'Confidence Scoring',
-    desc: 'Beyond binary risk scores, the agent outputs a calibrated confidence metric derived from the distance to the uncertainty boundary, helping analysts triage borderline cases.',
+    desc: 'Beyond binary risk scores, the system outputs a calibrated confidence metric derived from the distance to the uncertainty boundary, helping analysts triage borderline cases.',
     tags: ['Calibration', 'Uncertainty Quantification'],
   },
   {

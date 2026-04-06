@@ -23,7 +23,7 @@ export default function Home() {
       <section className="relative pt-20 pb-28 px-4 text-center max-w-5xl mx-auto">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold mb-8 tracking-wide">
           <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-          Powered by XGBoost + SHAP Explainability
+          XGBoost + SHAP Explainability
         </div>
         <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-6 leading-none">
           <span className="text-white">Smarter Capital.</span>
@@ -33,7 +33,7 @@ export default function Home() {
           </span>
         </h1>
         <p className="text-slate-400 text-xl md:text-2xl leading-relaxed max-w-3xl mx-auto font-light mb-12">
-          The autonomous AI underwriting agent that transforms raw financial data into precise, explainable loan decisions — in milliseconds.
+          Advanced AI underwriting system that transforms raw financial data into precise, explainable loan decisions — in milliseconds.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link

@@ -1,8 +1,17 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Dict, Any
+
 from api.routes import router
+from api.schemas import LoanApplicationRequest, AgentDecisionResponse, FeatureImpact
+from services.credit_bureau_service import credit_bureau_service
+from tools.risk_model import predict_risk
+from tools.explainability import explain_prediction
+from tools.decision import decision_engine
+from database import insert_loan_application
 from utils.db import connect_to_db, close_db_connection
 from utils.logger import get_logger
 from config import settings
@@ -35,6 +44,164 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+
+
+@app.post("/analyze-loan-complete", response_model=AgentDecisionResponse)
+async def analyze_loan_complete(
+    application: LoanApplicationRequest,
+    background_tasks: BackgroundTasks
+):
+    """
+    Complete loan analysis endpoint that integrates:
+    1. Mock Credit Bureau API for credit velocity data
+    2. AI Risk Model for probability prediction
+    3. SHAP explainability for feature attributions
+    4. Decision Engine for final authorization
+    5. MongoDB for persistent storage
+    """
+    try:
+        logger.info(f"Starting loan analysis for user: {application.user_id}")
+        
+        # STEP 1: Call Mock Credit Bureau API
+        logger.info("Step 1: Fetching credit bureau data...")
+        credit_bureau_data = await credit_bureau_service.get_credit_data(
+            user_id=application.user_id,
+            full_name=""
+        )
+        
+        credit_velocity = credit_bureau_data.get("credit_score", application.credit_score)
+        debt_index = credit_bureau_data.get("debt_index", application.dti)
+        
+        logger.info(
+            f"Credit Bureau Response - Score: {credit_velocity}, "
+            f"Debt Index: {debt_index}, Bureau: {credit_bureau_data.get('bureau_name')}"
+        )
+        
+        final_credit_score = credit_velocity
+        final_dti = debt_index
+        
+        # STEP 2: AI Risk Prediction
+        logger.info("Step 2: Running AI risk prediction...")
+        risk_probability, confidence_score = predict_risk(
+            income=application.income,
+            credit_score=final_credit_score,
+            dti=final_dti,
+            employment_length=application.employment_length
+        )
+        
+        logger.info(
+            f"AI Prediction - Risk Probability: {risk_probability:.4f}, "
+            f"Confidence: {confidence_score:.4f}"
+        )
+        
+        # STEP 3: SHAP Explainability
+        logger.info("Step 3: Generating SHAP feature attributions...")
+        shap_features = explain_prediction(
+            income=application.income,
+            credit_score=final_credit_score,
+            dti=final_dti,
+            employment_length=application.employment_length
+        )
+        
+        important_features = [
+            FeatureImpact(feature=item["feature"], impact=item["impact"])
+            for item in shap_features
+        ]
+        
+        logger.info(f"SHAP Analysis - Top feature: {shap_features[0]['feature']}")
+        
+        # STEP 4: Decision Engine
+        logger.info("Step 4: Running decision engine...")
+        final_decision, decision_reasoning = decision_engine(
+            probability=risk_probability,
+            credit_score=final_credit_score,
+            dti=final_dti,
+            employment_length=application.employment_length
+        )
+        
+        logger.info(f"Decision Engine - Final Decision: {final_decision}")
+        
+        # STEP 5: Prepare Complete Record for MongoDB
+        complete_record: Dict[str, Any] = {
+            "applicant_id": application.user_id,
+            "user_id": application.user_id,
+            "income": application.income,
+            "credit_score_input": application.credit_score,
+            "dti_input": application.dti,
+            "employment_length": application.employment_length,
+            "currency": application.currency,
+            
+            "credit_bureau_data": {
+                "credit_velocity": credit_velocity,
+                "debt_index": debt_index,
+                "credit_history_months": credit_bureau_data.get("credit_history_months"),
+                "total_accounts": credit_bureau_data.get("total_accounts"),
+                "delinquent_accounts": credit_bureau_data.get("delinquent_accounts"),
+                "credit_utilization": credit_bureau_data.get("credit_utilization"),
+                "payment_history_score": credit_bureau_data.get("payment_history_score"),
+                "bureau_name": credit_bureau_data.get("bureau_name"),
+                "api_success": credit_bureau_data.get("success", False)
+            },
+            
+            "ai_analysis": {
+                "risk_probability": risk_probability,
+                "confidence_score": confidence_score,
+                "model_version": "v1.0",
+                "final_credit_score_used": final_credit_score,
+                "final_dti_used": final_dti
+            },
+            
+            "shap_telemetry": [
+                {"feature": f.feature, "impact": f.impact}
+                for f in important_features
+            ],
+            
+            "decision": {
+                "authorization": final_decision,
+                "reasoning": decision_reasoning,
+                "timestamp": datetime.utcnow()
+            },
+            
+            "status": final_decision.lower(),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # STEP 6: Save to MongoDB (Background Task)
+        async def save_to_database():
+            try:
+                document_id = await insert_loan_application(complete_record)
+                logger.info(f"Successfully saved loan analysis to MongoDB with ID: {document_id}")
+            except Exception as db_error:
+                logger.error(f"Failed to save to MongoDB: {db_error}")
+        
+        background_tasks.add_task(save_to_database)
+        
+        # STEP 7: Format Response for Frontend
+        response = AgentDecisionResponse(
+            risk_score=risk_probability,
+            confidence=confidence_score,
+            decision=final_decision,
+            explanation=decision_reasoning,
+            important_features=important_features
+        )
+        
+        logger.info(
+            f"Loan analysis completed for user {application.user_id}: "
+            f"{final_decision} (Risk: {risk_probability:.2%}, Confidence: {confidence_score:.2%})"
+        )
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unhandled error in loan analysis: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error during loan analysis: {str(e)}"
+        )
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

@@ -12,8 +12,8 @@ const steps = [
   {
     number: '02',
     icon: Cpu,
-    title: 'AI Agent Processes Data',
-    desc: 'The LoanAgent orchestrates a Think → Act → Observe loop, dynamically calling ML tools, fetching historical context from MongoDB, and building the decision context.',
+    title: 'Data Processing',
+    desc: 'The system orchestrates a comprehensive analysis pipeline, dynamically calling ML tools, fetching historical context from MongoDB, and building the decision context.',
     details: ['XGBoost inference', 'SHAP value computation', 'Historical memory retrieval'],
   },
   {
