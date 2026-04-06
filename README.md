@@ -366,3 +366,4 @@ For issues and questions:
 - FastAPI for the excellent web framework
 - React team for the frontend framework
 # miniproject2B
+# AI-Banking
