@@ -1,9 +1,12 @@
 import os
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+import re
+from fastapi import FastAPI, BackgroundTasks, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Dict, Any
+from PyPDF2 import PdfReader
+import io
 
 from api.routes import router
 from api.schemas import LoanApplicationRequest, AgentDecisionResponse, FeatureImpact
@@ -44,6 +47,90 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+
+
+@app.post("/verify-income")
+async def verify_income(
+    claimed_income: str = Form(...),
+    document: UploadFile = File(...)
+):
+    """
+    Payslip Document Verification endpoint for fraud detection.
+    Accepts claimed income and a PDF document, extracts text from PDF,
+    and checks if the claimed income appears in the document.
+    """
+    try:
+        logger.info(f"Starting income verification for claimed income: {claimed_income}")
+        
+        # Validate file type
+        if not document.filename.lower().endswith('.pdf'):
+            raise HTTPException(
+                status_code=400,
+                detail="Only PDF files are supported for payslip verification"
+            )
+        
+        # Read PDF content
+        pdf_content = await document.read()
+        pdf_file = io.BytesIO(pdf_content)
+        
+        # Extract text from PDF
+        try:
+            pdf_reader = PdfReader(pdf_file)
+            extracted_text = ""
+            for page in pdf_reader.pages:
+                extracted_text += page.extract_text()
+            
+            logger.info(f"Successfully extracted {len(extracted_text)} characters from PDF")
+        except Exception as pdf_error:
+            logger.error(f"Failed to read PDF: {pdf_error}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to read PDF document: {str(pdf_error)}"
+            )
+        
+        # Normalize both claimed income and extracted text
+        # Remove commas, spaces, dollar signs, and convert to lowercase
+        def normalize_text(text: str) -> str:
+            return re.sub(r'[\s,$]', '', text.lower())
+        
+        normalized_claimed_income = normalize_text(claimed_income)
+        normalized_extracted_text = normalize_text(extracted_text)
+        
+        # Check if claimed income exists in the PDF text
+        income_found = normalized_claimed_income in normalized_extracted_text
+        
+        verification_result = {
+            "verified": income_found,
+            "payslip_filename": document.filename,
+            "claimed_income": claimed_income,
+            "verification_timestamp": datetime.utcnow().isoformat()
+        }
+        
+        if income_found:
+            logger.info(f"Income verification PASSED: {claimed_income} found in document")
+            return {
+                "status": "success",
+                "fraud_flag": False,
+                "message": "Income verification successful. The claimed income matches the payslip document.",
+                "verification_data": verification_result
+            }
+        else:
+            logger.warning(f"Income verification FAILED: {claimed_income} NOT found in document")
+            return {
+                "status": "success",
+                "fraud_flag": True,
+                "message": "Fraud Alert: The claimed income does not match the payslip document. Please verify your income information.",
+                "verification_data": verification_result
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unhandled error in income verification: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error during income verification: {str(e)}"
+        )
 
 
 @app.post("/analyze-loan-complete", response_model=AgentDecisionResponse)

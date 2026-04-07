@@ -118,6 +118,40 @@ def generate_loan_report_pdf(application_data: dict, decision_data: dict) -> Byt
     elements.append(applicant_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Payslip Verification Section
+    payslip_data = application_data.get('payslip_verification', {})
+    if payslip_data:
+        elements.append(Paragraph("PAYSLIP VERIFICATION", heading_style))
+        
+        verification_status = "VERIFIED ✓" if payslip_data.get('verified') else "NOT VERIFIED ✗"
+        verification_color = colors.HexColor('#10b981') if payslip_data.get('verified') else colors.HexColor('#ef4444')
+        
+        payslip_verification_data = [
+            ['Verification Status:', verification_status],
+            ['Payslip Document:', payslip_data.get('payslip_filename', 'N/A')],
+            ['Claimed Income:', f"{currency_symbol}{payslip_data.get('claimed_income', 'N/A')}"],
+            ['Verified On:', payslip_data.get('verification_timestamp', 'N/A')]
+        ]
+        
+        payslip_table = Table(payslip_verification_data, colWidths=[2.5*inch, 4*inch])
+        payslip_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f8fafc')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#1e293b')),
+            ('TEXTCOLOR', (1, 0), (1, 0), verification_color),
+            ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0'))
+        ]))
+        
+        elements.append(payslip_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
     # Decision Summary Section
     elements.append(Paragraph("DECISION SUMMARY", heading_style))
     
